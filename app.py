@@ -9,34 +9,63 @@ CSS = """
 <style>
 @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
 :root { --g:#33ff66; --gd:#118833; --bg:#021006; --red:#ff5544; }
-.stApp { background:#000; }
+html, body, .stApp { background:#000; touch-action:manipulation; overscroll-behavior:none; }
 header[data-testid="stHeader"] { background:transparent; }
 .block-container { max-width: 640px; padding-top: 1.5rem; }
 html, body, .stApp, .stApp * { font-family:'VT323','Courier New',monospace; }
-.crt { background:var(--bg); border:4px solid var(--gd); border-radius:18px;
-       padding:14px 18px; color:var(--g); text-shadow:0 0 6px rgba(51,255,102,.7);
-       box-shadow: 0 0 30px rgba(51,255,102,.15) inset; }
+
+/* the "monitor" */
+.st-key-screen { background:var(--bg); border:4px solid var(--gd); border-radius:18px;
+       padding:14px 18px; box-shadow: 0 0 30px rgba(51,255,102,.15) inset; user-select:none; }
+.title, .status, .rule, .msg { color:var(--g); text-shadow:0 0 6px rgba(51,255,102,.7); }
 .title { text-align:center; font-size:46px; letter-spacing:4px; line-height:1; margin:0 0 6px; }
 .status { display:flex; justify-content:space-between; font-size:26px; border-bottom:2px solid var(--gd);
           padding-bottom:4px; margin-bottom:8px; }
-.rule { text-align:center; font-size:34px; background:var(--g); color:var(--bg); text-shadow:none;
-        padding:2px 0; margin-bottom:10px; letter-spacing:2px; }
-table.board { width:100%; border-collapse:separate; border-spacing:4px; table-layout:fixed; }
-table.board td { height:62px; text-align:center; vertical-align:middle; border:2px solid var(--gd);
-                 font-size:34px; line-height:1; position:relative; }
-td .who { display:block; font-size:22px; line-height:18px; height:18px; }
-td.me { background:var(--g); color:var(--bg); text-shadow:none; }
-td.trog { background:var(--red); color:#200; text-shadow:none; border-color:var(--red); }
-td.empty { border-color:#0a3d1a; }
-.msg { text-align:center; font-size:28px; margin-top:10px; min-height:34px; }
-.crt.good { border-color:var(--g); } .crt.bad, .crt.caught { border-color:var(--red); }
-.crt.level { border-color:#ffee55; }
+.rule { text-align:center; font-size:34px; background:var(--g); color:var(--bg) !important;
+        text-shadow:none; padding:2px 0; letter-spacing:2px; }
+.msg { text-align:center; font-size:28px; min-height:34px; }
 .over { text-align:center; font-size:40px; color:var(--red); text-shadow:none; }
-div[class*="st-key-"] button { width:100%; font-size:26px; background:#021006; color:#33ff66;
-       border:2px solid #118833; border-radius:6px; height:2.6rem; }
-div[class*="st-key-"] button:hover { background:#33ff66; color:#021006; border-color:#33ff66; }
-div[class*="st-key-"] button p { font-size:26px; }
-.help { color:#33ff66; font-size:20px; text-align:center; margin-top:6px; opacity:.8; }
+
+/* keep rows of buttons side by side even on phones (Streamlit stacks columns by default) */
+.st-key-board [data-testid="stHorizontalBlock"], .st-key-pad [data-testid="stHorizontalBlock"],
+.st-key-bar [data-testid="stHorizontalBlock"] {
+       flex-wrap:nowrap !important; gap:4px !important; }
+.st-key-board [data-testid="stColumn"], .st-key-pad [data-testid="stColumn"],
+.st-key-bar [data-testid="stColumn"] {
+       min-width:0 !important; flex:1 1 0 !important; width:auto !important; }
+.st-key-board [data-testid="stVerticalBlock"] { gap:4px; }
+.st-key-board { margin-top:10px; }
+
+/* board cells are real Streamlit buttons so taps reach Python */
+.st-key-board button { height:62px; min-height:0; width:100%; padding:0; border-radius:0;
+       background:transparent; color:var(--g); border:2px solid var(--gd);
+       text-shadow:0 0 6px rgba(51,255,102,.7); }
+.st-key-board button p { font-size:34px; line-height:1; margin:0; }
+.st-key-board button:hover:not(:disabled) { background:rgba(51,255,102,.18); border-color:var(--g); color:var(--g); }
+.st-key-board button:disabled { opacity:1; color:var(--g); cursor:default; }
+.st-key-board button:focus:not(:active) { color:var(--g); border-color:var(--gd); }
+
+.st-key-pad button, .st-key-new button { width:100%; background:#021006; color:var(--g);
+       border:2px solid var(--gd); border-radius:6px; height:2.6rem; }
+.st-key-pad button p, .st-key-new button p { font-size:26px; }
+.st-key-pad button:hover, .st-key-new button:hover { background:var(--g); color:var(--bg); border-color:var(--g); }
+.st-key-bar { margin-top:8px; }
+.st-key-bar [data-testid="stColumn"] { align-self:center; }
+.st-key-bar label p { color:var(--g); font-size:22px; }
+.help { color:var(--g); font-size:20px; text-align:center; margin-top:6px; opacity:.8; }
+.help-touch { display:none; }
+@media (pointer: coarse) {
+  .st-key-pad { display:none; }            /* touch: tap the board instead */
+  .help-touch { display:inline; } .help-keys { display:none; }
+}
+@media (max-width: 640px) {
+  .block-container { padding:0.6rem 0.4rem 2rem; }
+  .st-key-screen { padding:8px; border-width:3px; border-radius:12px; }
+  .title { font-size:34px; letter-spacing:2px; } .status { font-size:22px; }
+  .rule { font-size:26px; } .msg { font-size:22px; min-height:28px; }
+  .st-key-board button { height:clamp(46px, 14vw, 62px); }
+  .st-key-board button p { font-size:28px; }
+}
 </style>
 """
 
@@ -68,9 +97,13 @@ const CUES = {
   start:   [[262, 262, 0.08], [330, 330, 0.08], [392, 392, 0.08], [523, 523, 0.16]],
   gameover:[[392, 392, 0.22], [370, 370, 0.22], [349, 349, 0.22], [330, 165, 0.6]],
 };
-window.__nmPlay = (cue, seq) => {
+const BUZZ = {munch:[15], oops:[90], caught:[60,40,60,40,160], level:[30,40,30,40,100],
+              gameover:[300], nope:[20]};
+window.__nmPlay = (cue, seq, mute, vibrate) => {
   if (window.__nmLastSeq === seq) return;      // each action's cue plays once
   window.__nmLastSeq = seq;
+  if (vibrate && BUZZ[cue] && navigator.vibrate) navigator.vibrate(BUZZ[cue]);
+  if (mute) return;
   const ctx = window.__nmCtx, notes = CUES[cue];
   if (!ctx || ctx.state !== 'running' || !notes) return;
   let t = ctx.currentTime + 0.01;
@@ -88,7 +121,7 @@ window.__nmPlay = (cue, seq) => {
     t += dur;
   }
 };
-['keydown', 'pointerdown'].forEach(ev => document.addEventListener(ev, window.__nmUnlock, true));
+['keydown', 'pointerdown', 'touchend', 'click'].forEach(ev => document.addEventListener(ev, window.__nmUnlock, true));
 const map = {ArrowUp:'up', w:'up', W:'up', ArrowDown:'down', s:'down', S:'down',
              ArrowLeft:'left', a:'left', A:'left', ArrowRight:'right', d:'right', D:'right',
              ' ':'munch', Enter:'munch'};
@@ -129,70 +162,89 @@ if "game" not in st.session_state:
 game: Game = st.session_state.game
 
 
-def render_board(g: Game) -> str:
-    troggles = {(t.r, t.c): t for t in g.troggles}
-    rows = []
+NBSP = " "
+
+
+def cell_css(g: Game) -> str:
+    """Per-cell styling for the Muncher, Troggles and eaten squares."""
+    rules = []
+    glyph = "content:'%s'; font-size:20px; line-height:16px; height:16px; display:block;"
     for r in range(ROWS):
-        cells = []
         for c in range(COLS):
-            v = g.grid[r][c]
-            text = "&nbsp;" if v is None else str(v)
-            cls, who = "", ""
+            k = f".st-key-cell_{r}_{c} button"
             if (r, c) == (g.pr, g.pc):
-                cls, who = "me", "☻"
-            elif (r, c) in troggles:
-                cls, who = "trog", "☠"
-            elif v is None:
-                cls = "empty"
-            if who:
-                cells.append(f'<td class="{cls}"><span class="who">{who}</span>{text}</td>')
-            else:
-                cells.append(f'<td class="{cls}">{text}</td>')
-        rows.append("<tr>" + "".join(cells) + "</tr>")
-    return '<table class="board">' + "".join(rows) + "</table>"
+                rules.append(f"{k}{{background:var(--g) !important; color:var(--bg) !important;"
+                             f"flex-direction:column; text-shadow:none !important;}}"
+                             f"{k} p{{color:var(--bg) !important;}}{k}::before{{{glyph % '☻'}}}")
+            elif any((t.r, t.c) == (r, c) for t in g.troggles):
+                rules.append(f"{k}{{background:var(--red) !important; border-color:var(--red) !important;"
+                             f"color:#200 !important; flex-direction:column; text-shadow:none !important;}}"
+                             f"{k} p{{color:#200 !important;}}{k}::before{{{glyph % '☠'}}}")
+            elif g.grid[r][c] is None:
+                rules.append(f"{k}{{border-color:#0a3d1a !important;}}")
+    border = {"bad": "var(--red)", "caught": "var(--red)", "level": "#ffee55", "good": "var(--g)"}.get(g.flash)
+    if border:
+        rules.append(f".st-key-screen{{border-color:{border} !important;}}")
+    return "<style>" + "".join(rules) + "</style>"
 
 
-st.markdown(CSS, unsafe_allow_html=True)
+st.markdown(CSS + cell_css(game), unsafe_allow_html=True)
 
 lives = "☻ " * game.lives or "-"
 over = '<div class="over">GAME OVER<br>PRESS NEW GAME</div>' if game.over else ""
-st.markdown(
-    f"""
-<div class="crt {game.flash}">
-  <div class="title">NUMBER MUNCHERS</div>
-  <div class="status"><span>SCORE {game.score:04d}</span><span>LEVEL {game.level}</span>
-       <span>{lives}</span></div>
-  <div class="rule">{game.rule.title}</div>
-  {render_board(game)}
-  <div class="msg">{game.message}</div>
-  {over}
-</div>
+with st.container(key="screen"):
+    st.markdown(
+        f"""
+<div class="title">NUMBER MUNCHERS</div>
+<div class="status"><span>SCORE {game.score:04d}</span><span>LEVEL {game.level}</span>
+     <span>{lives}</span></div>
+<div class="rule">{game.rule.title}</div>
 """,
-    unsafe_allow_html=True,
-)
+        unsafe_allow_html=True,
+    )
+    with st.container(key="board"):
+        for r in range(ROWS):
+            cols = st.columns(COLS, gap="small")
+            for c in range(COLS):
+                v = game.grid[r][c]
+                cols[c].button(
+                    NBSP if v is None else str(v),
+                    key=f"cell_{r}_{c}",
+                    on_click=game.tap,
+                    args=(r, c),
+                    disabled=game.over,
+                    width="stretch",
+                )
+    st.markdown(f'<div class="msg">{game.message}</div>{over}', unsafe_allow_html=True)
 
-st.write("")
+# Keyboard / on-screen D-pad (hidden on touch devices; the keyboard shortcuts click these)
 disabled = game.over
-_, up, _ = st.columns([1, 1, 1])
-left, munch, right = st.columns([1, 1, 1])
-_, down, _ = st.columns([1, 1, 1])
-up.button("▲", key="up", on_click=game.move, args=(-1, 0), disabled=disabled)
-left.button("◀", key="left", on_click=game.move, args=(0, -1), disabled=disabled)
-munch.button("MUNCH", key="munch", on_click=game.munch, disabled=disabled)
-right.button("▶", key="right", on_click=game.move, args=(0, 1), disabled=disabled)
-down.button("▼", key="down", on_click=game.move, args=(1, 0), disabled=disabled)
+with st.container(key="pad"):
+    _, up, _ = st.columns(3)
+    left, munch, right = st.columns(3)
+    _, down, _ = st.columns(3)
+    up.button("▲", key="up", on_click=game.move, args=(-1, 0), disabled=disabled, width="stretch")
+    left.button("◀", key="left", on_click=game.move, args=(0, -1), disabled=disabled, width="stretch")
+    munch.button("MUNCH", key="munch", on_click=game.munch, disabled=disabled, width="stretch")
+    right.button("▶", key="right", on_click=game.move, args=(0, 1), disabled=disabled, width="stretch")
+    down.button("▼", key="down", on_click=game.move, args=(1, 0), disabled=disabled, width="stretch")
 
-new_col, snd_col = st.columns([1, 1])
-new_col.button("NEW GAME", key="new", on_click=new_game)
-sound_on = snd_col.toggle("SOUND", value=True, key="sound_on")
+with st.container(key="bar"):
+    new_col, snd_col, vib_col = st.columns([1.3, 1, 1.1])
+    new_col.button("NEW GAME", key="new", on_click=new_game, width="stretch")
+    sound_on = snd_col.toggle("SOUND", value=True, key="sound_on")
+    vibrate_on = vib_col.toggle("VIBRATE", value=True, key="vibrate_on")
 best = max(st.session_state.get("best", 0), game.score)
 st.markdown(
-    f'<div class="help">ARROWS / WASD MOVE &middot; SPACE MUNCHES &middot; HI-SCORE {best:04d}<br>'
+    f'<div class="help"><span class="help-keys">ARROWS / WASD MOVE &middot; SPACE MUNCHES &middot; </span>'
+    f'<span class="help-touch">TAP A SQUARE TO WALK THERE &middot; TAP YOUR MUNCHER AGAIN TO MUNCH '
+    f"&middot; </span>HI-SCORE {best:04d}<br>"
     f"AVOID THE TROGGLES (☠). WRONG MUNCH = LOSE A LIFE. YOU START WITH {START_LIVES}.</div>",
     unsafe_allow_html=True,
 )
-cue = game.sound if sound_on else ""
 st.html(
-    KEYS_JS + f"<script>window.__nmPlay({cue!r}, {game.sound_seq});</script>",
+    KEYS_JS
+    + f"<script>window.__nmPlay({game.sound!r}, {game.sound_seq}, "
+    f"{str(not sound_on).lower()}, {str(vibrate_on).lower()});</script>",
     unsafe_allow_javascript=True,
 )

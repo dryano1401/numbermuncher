@@ -15,7 +15,11 @@ streamlit run app.py
 
 ## Controls
 
-Arrow keys / WASD to move, Space or Enter to munch (or use the on-screen buttons).
+- **Touch:** tap a square to walk there (one square per turn, so Troggles move too), then tap
+  the Muncher's own square again to munch. Double-tapping a far square walks and munches.
+  Phones also get optional vibration feedback (VIBRATE toggle).
+- **Keyboard:** arrow keys / WASD to move, Space or Enter to munch.
+- **Mouse:** click squares, or use the on-screen D-pad (hidden on touch devices).
 
 Sound effects (munch, wrong answer, Troggle appears, caught, level clear, game over) are
 synthesized in the browser with Web Audio, so there are no audio files. Use the SOUND

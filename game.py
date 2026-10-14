@@ -210,10 +210,35 @@ class Game:
         self.flash = ""
         self._begin("step")
         self.message = f"EAT {self.rule.title}"
+        self._step(dr, dc)
+
+    def _step(self, dr: int, dc: int):
         nr, nc = self.pr + dr, self.pc + dc
         if 0 <= nr < ROWS and 0 <= nc < COLS:
             self.pr, self.pc = nr, nc
         self._end_turn()
+
+    def move_to(self, r: int, c: int):
+        """Walk to (r, c) one square per turn, so Troggles get their moves on the way."""
+        if self.over:
+            return
+        self.flash = ""
+        self._begin("step")
+        self.message = f"EAT {self.rule.title}"
+        lives = self.lives
+        while (self.pr, self.pc) != (r, c) and not self.over and self.lives == lives:
+            dr, dc = r - self.pr, c - self.pc
+            if abs(dr) >= abs(dc):
+                self._step((dr > 0) - (dr < 0), 0)
+            else:
+                self._step(0, (dc > 0) - (dc < 0))
+
+    def tap(self, r: int, c: int):
+        """Touch control: tap a square to walk there, tap the Muncher's own square to munch."""
+        if (r, c) == (self.pr, self.pc):
+            self.munch()
+        else:
+            self.move_to(r, c)
 
     def munch(self):
         if self.over:
