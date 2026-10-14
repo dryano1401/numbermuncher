@@ -17,4 +17,8 @@ streamlit run app.py
 
 Arrow keys / WASD to move, Space or Enter to munch (or use the on-screen buttons).
 
+Sound effects (munch, wrong answer, Troggle appears, caught, level clear, game over) are
+synthesized in the browser with Web Audio, so there are no audio files. Use the SOUND
+toggle to mute. Browsers only allow audio after a click or key press.
+
 Game rules live in `game.py`; the Streamlit UI is in `app.py`.

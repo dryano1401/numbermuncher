@@ -145,6 +145,10 @@ class Troggle:
     skill: float = 0.5  # chance of chasing the muncher rather than wandering
 
 
+# Sound cue priorities: when several things happen in one action, the loudest wins.
+SOUND_PRIORITY = {"": 0, "step": 1, "troggle": 2, "nope": 2, "start": 3, "munch": 3,
+                  "oops": 4, "caught": 5, "level": 6, "gameover": 7}
+
 TROGGLE_NAMES = ["Reggie", "Bashful", "Helper", "Worker", "Fripp"]
 
 
@@ -164,10 +168,20 @@ class Game:
     troggles: list = field(default_factory=list)
     rng: random.Random = field(default=None)
     flash: str = ""  # "", "good", "bad", "caught"
+    sound: str = "start"  # cue name for the UI to play after the latest action
+    sound_seq: int = 1    # bumps every action so the UI plays each cue exactly once
 
     def __post_init__(self):
         self.rng = random.Random(self.seed)
         self.start_level()
+
+    # -- sound cues -----------------------------------------------------
+    def _begin(self, cue: str):
+        self.sound, self.sound_seq = cue, self.sound_seq + 1
+
+    def _snd(self, cue: str):
+        if SOUND_PRIORITY[cue] >= SOUND_PRIORITY[self.sound]:
+            self.sound = cue
 
     # -- level setup --------------------------------------------------
     def start_level(self):
@@ -194,6 +208,7 @@ class Game:
         if self.over:
             return
         self.flash = ""
+        self._begin("step")
         self.message = f"EAT {self.rule.title}"
         nr, nc = self.pr + dr, self.pc + dc
         if 0 <= nr < ROWS and 0 <= nc < COLS:
@@ -204,8 +219,10 @@ class Game:
         if self.over:
             return
         self.flash = ""
+        self._begin("")
         v = self.grid[self.pr][self.pc]
         if v is None:
+            self._snd("nope")
             self.message = "NOTHING HERE TO MUNCH"
             self._end_turn()
             return
@@ -213,6 +230,7 @@ class Game:
             self.grid[self.pr][self.pc] = None
             self.score += POINTS_PER_MUNCH
             self.flash = "good"
+            self._snd("munch")
             self.message = f"YUM! {v}"
             if self.remaining() == 0:
                 self.level += 1
@@ -220,9 +238,11 @@ class Game:
                 self.start_level()
                 self.message = f"LEVEL {self.level - 1} CLEARED! +50  |  EAT {self.rule.title}"
                 self.flash = "level"
+                self._snd("level")
                 return
         else:
             self.flash = "bad"
+            self._snd("oops")
             self.message = f"OOPS! {v} IS NOT {self.rule.title}"
             self.grid[self.pr][self.pc] = None
             self._lose_life()
@@ -233,6 +253,7 @@ class Game:
         self.lives -= 1
         if self.lives <= 0:
             self.over = True
+            self._snd("gameover")
             self.message = "GAME OVER"
         else:
             self.pr, self.pc = ROWS // 2, COLS // 2
@@ -255,6 +276,7 @@ class Game:
         self.troggles.append(
             Troggle(r, c, self.rng.choice(TROGGLE_NAMES), min(0.25 + 0.05 * self.level, 0.7))
         )
+        self._snd("troggle")
 
     def _end_turn(self):
         if self.over:
@@ -288,6 +310,7 @@ class Game:
         if any((t.r, t.c) == (self.pr, self.pc) for t in self.troggles):
             who = next(t.name for t in self.troggles if (t.r, t.c) == (self.pr, self.pc))
             self.flash = "caught"
+            self._snd("caught")
             self.message = f"{who.upper()} GOT YOU!" if self.lives > 1 else "GAME OVER"
             self._lose_life()
             return True

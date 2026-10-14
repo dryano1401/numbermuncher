@@ -41,9 +41,54 @@ div[class*="st-key-"] button p { font-size:26px; }
 """
 
 KEYS_JS = """
-<script>
+<script>(() => {
 
 const doc = document;
+
+// ---- sound: 1-bit-speaker style square-wave blips, synthesized with Web Audio ----
+window.__nmCtx = window.__nmCtx || null;
+window.__nmUnlock = () => {
+  try {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!window.__nmCtx && AC) window.__nmCtx = new AC();
+    if (window.__nmCtx && window.__nmCtx.state === 'suspended') window.__nmCtx.resume();
+  } catch (e) {}
+};
+// notes: [startFreq, endFreq, seconds, wave?]; played back to back
+const CUES = {
+  step:    [[180, 180, 0.03]],
+  nope:    [[110, 90, 0.12]],
+  munch:   [[330, 660, 0.06], [660, 220, 0.07], [330, 700, 0.06], [700, 260, 0.08]],
+  oops:    [[220, 110, 0.18], [196, 98, 0.18], [175, 87, 0.18], [147, 55, 0.35]],
+  troggle: [[140, 220, 0.08], [220, 140, 0.08], [140, 220, 0.08], [220, 140, 0.08]],
+  caught:  [[523, 262, 0.09], [494, 247, 0.09], [466, 233, 0.09], [440, 220, 0.09],
+            [415, 208, 0.09], [392, 196, 0.09], [370, 98, 0.30]],
+  level:   [[523, 523, 0.09], [659, 659, 0.09], [784, 784, 0.09], [1047, 1047, 0.09],
+            [784, 784, 0.07], [1047, 1047, 0.07], [1319, 1319, 0.28]],
+  start:   [[262, 262, 0.08], [330, 330, 0.08], [392, 392, 0.08], [523, 523, 0.16]],
+  gameover:[[392, 392, 0.22], [370, 370, 0.22], [349, 349, 0.22], [330, 165, 0.6]],
+};
+window.__nmPlay = (cue, seq) => {
+  if (window.__nmLastSeq === seq) return;      // each action's cue plays once
+  window.__nmLastSeq = seq;
+  const ctx = window.__nmCtx, notes = CUES[cue];
+  if (!ctx || ctx.state !== 'running' || !notes) return;
+  let t = ctx.currentTime + 0.01;
+  for (const [f0, f1, dur] of notes) {
+    const osc = ctx.createOscillator(), gain = ctx.createGain();
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(f0, t);
+    osc.frequency.linearRampToValueAtTime(f1, t + dur);
+    const vol = cue === 'step' ? 0.025 : 0.07;
+    gain.gain.setValueAtTime(vol, t);
+    gain.gain.setValueAtTime(vol, t + dur * 0.85);
+    gain.gain.linearRampToValueAtTime(0, t + dur);
+    osc.connect(gain).connect(ctx.destination);
+    osc.start(t); osc.stop(t + dur + 0.01);
+    t += dur;
+  }
+};
+['keydown', 'pointerdown'].forEach(ev => document.addEventListener(ev, window.__nmUnlock, true));
 const map = {ArrowUp:'up', w:'up', W:'up', ArrowDown:'down', s:'down', S:'down',
              ArrowLeft:'left', a:'left', A:'left', ArrowRight:'right', d:'right', D:'right',
              ' ':'munch', Enter:'munch'};
@@ -65,7 +110,7 @@ window.__nmHandler = (e) => {
 window.__nmBlock = (e) => { if (map[e.key]) e.preventDefault(); };
 doc.addEventListener('keydown', window.__nmHandler, true);
 doc.addEventListener('keyup', window.__nmBlock, true);
-</script>
+})();</script>
 
 """
 
@@ -137,11 +182,17 @@ munch.button("MUNCH", key="munch", on_click=game.munch, disabled=disabled)
 right.button("▶", key="right", on_click=game.move, args=(0, 1), disabled=disabled)
 down.button("▼", key="down", on_click=game.move, args=(1, 0), disabled=disabled)
 
-st.button("NEW GAME", key="new", on_click=new_game)
+new_col, snd_col = st.columns([1, 1])
+new_col.button("NEW GAME", key="new", on_click=new_game)
+sound_on = snd_col.toggle("SOUND", value=True, key="sound_on")
 best = max(st.session_state.get("best", 0), game.score)
 st.markdown(
     f'<div class="help">ARROWS / WASD MOVE &middot; SPACE MUNCHES &middot; HI-SCORE {best:04d}<br>'
     f"AVOID THE TROGGLES (☠). WRONG MUNCH = LOSE A LIFE. YOU START WITH {START_LIVES}.</div>",
     unsafe_allow_html=True,
 )
-st.html(KEYS_JS, unsafe_allow_javascript=True)
+cue = game.sound if sound_on else ""
+st.html(
+    KEYS_JS + f"<script>window.__nmPlay({cue!r}, {game.sound_seq});</script>",
+    unsafe_allow_javascript=True,
+)
